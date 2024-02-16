@@ -1,11 +1,15 @@
 #include <Keypad.h>
 #include <LiquidCrystal.h>
 
-#define RED_LED_PIN 13
-#define GREEN_LED_PIN 12
+#define RED_PIN 13
+#define GREEN_PIN 12
+#define LCD_WIDTH 16
+#define LCD_LENGTH 2
+#define INTERVAL 1000
 
 const int ROW_NUM    = 4; 
 const int COLUMN_NUM = 4; 
+unsigned long previousMillis = 0;
 
 char keys[ROW_NUM][COLUMN_NUM] = {
   {'1','2','3', 'A'},
@@ -28,14 +32,14 @@ int cursorRow = 0;
 String validCode = "1A2B";
 String currentCode;
 
-unsigned long previousMillis = 0;
-const long interval = 1000;
+#define CORRECT_CODE "CORRECT"
+#define WRONG_CODE "WRONG"
 
 void setup(){
-  lcd.begin(16, 2);
+  lcd.begin(LCD_WIDTH, LCD_LENGTH);
 
-  pinMode(RED_LED_PIN, OUTPUT);
-  pinMode(GREEN_LED_PIN, OUTPUT);
+  pinMode(RED_PIN, OUTPUT);
+  pinMode(GREEN_PIN, OUTPUT);
 }
 
 void loop(){
@@ -52,15 +56,20 @@ void loop(){
       int ledPin;
 
       if (currentCode == validCode) {
-        ledPin = GREEN_LED_PIN;
+        ledPin = GREEN_PIN;
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print(CORRECT_CODE);
       } else {
-        ledPin = RED_LED_PIN;
+        ledPin = RED_PIN;
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print(WRONG_CODE);
       }
 
       digitalWrite(ledPin, HIGH);
       previousMillis = millis();
 
-      lcd.clear();
       cursorColumn = 0;
       currentCode = "";
     }
@@ -68,8 +77,9 @@ void loop(){
 
   unsigned long currentMillis = millis();
 
-  if (currentMillis - previousMillis >= interval) {
-    digitalWrite(RED_LED_PIN, LOW);
-    digitalWrite(GREEN_LED_PIN, LOW);
+  if (currentMillis - previousMillis >= INTERVAL) {
+    digitalWrite(RED_PIN, LOW);
+    digitalWrite(GREEN_PIN, LOW);
+    lcd.clear();
   }
 }
