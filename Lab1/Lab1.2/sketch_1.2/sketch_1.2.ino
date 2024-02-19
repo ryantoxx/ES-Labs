@@ -3,13 +3,20 @@
 
 #define RED_PIN 13
 #define GREEN_PIN 12
+
 #define LCD_WIDTH 16
 #define LCD_LENGTH 2
+
 #define INTERVAL 1000
+#define MESSAGE_DISPLAY_TIME 1000
+
+#define CORRECT_CODE "CORRECT"
+#define WRONG_CODE "WRONG"
 
 const int ROW_NUM    = 4; 
 const int COLUMN_NUM = 4; 
 unsigned long previousMillis = 0;
+unsigned long messageDisplayStart = 0;
 
 char keys[ROW_NUM][COLUMN_NUM] = {
   {'1','2','3', 'A'},
@@ -32,9 +39,6 @@ int cursorRow = 0;
 String validCode = "1A2B";
 String currentCode;
 
-#define CORRECT_CODE "CORRECT"
-#define WRONG_CODE "WRONG"
-
 void setup(){
   lcd.begin(LCD_WIDTH, LCD_LENGTH);
 
@@ -50,36 +54,52 @@ void loop(){
     lcd.print(key);                
     currentCode += key;
 
-    cursorColumn++;                 
+    cursorColumn++;
 
-    if (cursorColumn == 4) {
+    int codeLength = 4;             
+
+    if (cursorColumn == codeLength) {
       int ledPin;
+      bool correctCode = false;
 
       if (currentCode == validCode) {
         ledPin = GREEN_PIN;
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print(CORRECT_CODE);
+        correctCode = true;
       } else {
         ledPin = RED_PIN;
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print(WRONG_CODE);
+        correctCode = true;
       }
 
       digitalWrite(ledPin, HIGH);
-      previousMillis = millis();
+      messageDisplayStart = millis();
 
       cursorColumn = 0;
       currentCode = "";
+
+      if (correctCode) {
+        previousMillis = millis(); 
+      }
     }
   }
 
   unsigned long currentMillis = millis();
 
+  if ((currentMillis - messageDisplayStart >= MESSAGE_DISPLAY_TIME) && (cursorColumn == 0)) {
+    digitalWrite(RED_PIN, LOW);
+    digitalWrite(GREEN_PIN, LOW);
+    lcd.clear(); 
+  }
+
   if (currentMillis - previousMillis >= INTERVAL) {
     digitalWrite(RED_PIN, LOW);
     digitalWrite(GREEN_PIN, LOW);
-    lcd.clear();
+    previousMillis = currentMillis;
   }
 }
+
