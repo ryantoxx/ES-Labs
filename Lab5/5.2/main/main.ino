@@ -10,8 +10,8 @@
 #define IN2_PIN 6
 #define ENA_PIN 5
 
-#define ENCODER_A_PIN 4
-#define ENCODER_B_PIN 3
+#define ENCODER_A_PIN 3
+#define ENCODER_B_PIN 4
 
 #define BAUD_RATE 9600
 #define LCD_WIDTH 40
@@ -31,11 +31,15 @@ int tempSetPoint;
 int motorSetPoint;
 long oldPosition = -999;
 
-double Kp = 3, Ki = 0.00001, Kd = 0.000001;
+volatile int encoderPos = 0;
+int previousStateA;
+int currentStateA;
+
+const int ENCODER_PPR = 24;
+
+double Kp = 25, Ki = 0.0003, Kd = 0.00001;
 double Input, Output, SetPoint;
 PID myPID(&Input, &Output, &SetPoint, Kp, Ki, Kd, DIRECT);
-
-Encoder myEncoder(ENCODER_A_PIN, ENCODER_B_PIN);
 
 int my_putChar(char ch, FILE *f) {
   return Serial.write(ch);
@@ -45,6 +49,20 @@ char my_getChar(FILE *f) {
   while (!Serial.available()) {
   }
   return Serial.read();
+}
+
+int readEncoder() {
+  currentStateA = digitalRead(ENCODER_A_PIN);
+  if (currentStateA != previousStateA) {
+    if (digitalRead(ENCODER_B_PIN) != currentStateA) {
+      encoderPos++;
+    } else {
+      encoderPos--;
+    }
+  }
+  previousStateA = currentStateA;
+
+  return encoderPos;
 }
 
 void setup() {
@@ -61,6 +79,10 @@ void setup() {
   myPID.SetMode(AUTOMATIC);
   myPID.SetSampleTime(10); 
   myPID.SetOutputLimits(-255, 255);
+
+  pinMode(ENCODER_A_PIN, INPUT);
+  pinMode(ENCODER_B_PIN, INPUT);
+  attachInterrupt(digitalPinToInterrupt(ENCODER_A_PIN), readEncoder, RISING);
 }
 
 char inputBuffer[10] = "";
@@ -83,15 +105,12 @@ void loop() {
       lcd.print(" C ");
     }
   }
+    int position = readEncoder() / ENCODER_PPR;
 
-  long position = myEncoder.read();
-  if (position != oldPosition) {
-    oldPosition = position;
     lcd.setCursor(0, 1);
     lcd.print("Current:");
     lcd.print(position);
     lcd.print("    ");
-  }
 
   SetPoint = motorSetPoint;
   Input = position;
